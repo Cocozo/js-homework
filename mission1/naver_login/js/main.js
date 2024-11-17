@@ -44,7 +44,7 @@ const [getFlag, subscribe, setFlag, isValid] = (() => {
   };
 
   const isValid = () => {
-    if (flags.email_flag && flags.pw_flag) {
+    if (flags.email_flag._value && flags.pw_flag._value) {
       return true;
     }
     return false;
