@@ -12,7 +12,47 @@ const user = {
 4. 로그인 버튼을 클릭시 조건처리
 
 */
-class Observer {
+const [getFlag, subscribe, setFlag, isValid] = (() => {
+  const flags = {
+    email_flag: {
+      _value : true,
+      _observers : new Set()
+    },
+    pw_flag: {
+      _value : true,
+      _observers : new Set()
+    },
+  };
+
+  const getFlag = (flag) => {
+    return flags[flag]._value;
+  };
+
+  const subscribe = (flag, observer) => {
+    flags[flag]._observers.add(observer);
+  }
+
+  const setFlag = (flag, statue) => {
+    if (typeof statue === "boolean") {
+      flags[flag]._value = statue;
+      notifyAll(flag);
+    }
+  };
+
+  const notifyAll = (flag) => {
+    flags[flag]._observers.forEach((observer) => observer());
+  };
+
+  const isValid = () => {
+    if (flags.email_flag && flags.pw_flag) {
+      return true;
+    }
+    return false;
+  };
+  return [getFlag, subscribe, setFlag, isValid];
+})();
+
+class EventHandler {
   _target = null;
   _callback_methood = null;
   _event = null;
@@ -47,26 +87,25 @@ class Observer {
   }
 }
 
-[setflag, isValid] = (() => {S
-  const flags = {
-    email_flag: false,
-    pw_flag: false,
-  };
+class InputEventHandler extends EventHandler {
+  _key = null
 
-  const setflag = (flag, statue) => {
-    if (typeof statue === "boolean") {
-      flags[flag] = statue;
-    }
-  };
-  const isValid = () => {
-    if (flags.email_flag && flags.pw_flag) {
-      return true;
-    }
-    return false;
-  };
+  constructor(target, event, callbackmethood, key){
+    super(target, event, callbackmethood);
+    this._key = key;
+    subscribe(this._key, this.render.bind(this));
+  }
 
-  return [setflag, isValid];
-})();
+  render() {
+    if(getFlag(this._key)) {
+      this._target.classList.remove("is--invalid");
+    }
+    else {
+      this._target.classList.add("is--invalid");
+    }
+  }
+
+}
 
 const form = document.querySelector(".login-form")
 const email_input = document.querySelector(".user-email-input");
@@ -86,22 +125,18 @@ function pwReg(text){
 const emailValidationCallback = (event) => {
   const value = event.target.value;
   if (emailReg(value)) {
-    setflag("email_flag", true);
-    event.target.classList.remove("is--invalid");
+    setFlag("email_flag", true);
   } else {
-    setflag("email_flag", false);
-    event.target.classList.add("is--invalid");
+    setFlag("email_flag", false);
   }
 };
 
 const passwordValidationCallback = (event) => {
   const value = event.target.value;
   if (pwReg(value)) {
-    setflag("pw_flag", true);
-    event.target.classList.remove("is--invalid");
+    setFlag("pw_flag", true);
   } else {
-    setflag("pw_flag", false);
-    event.target.classList.add("is--invalid");
+    setFlag("pw_flag", false);
   }
 };
 
@@ -110,7 +145,6 @@ const checkLoginInformation = () => {
     if(pw_input.value === user.pw) {
       return true;
     }
-    return false;
   }
   return false;
 }
@@ -128,13 +162,13 @@ const onSubmitEventCallback = (event) => {
 
 
 window.addEventListener("load", (event) => {
-  const email_observer = new Observer(email_input, "input", emailValidationCallback);
-  const pw_observer = new Observer(pw_input, "input", passwordValidationCallback);
-  const submit_observer = new Observer(form, "submit", onSubmitEventCallback)
+  const email_eventHandler = new InputEventHandler(email_input, "input", emailValidationCallback, "email_flag");
+  const pw_eventHandler = new InputEventHandler(pw_input, "input", passwordValidationCallback, "pw_flag");
+  const submit_eventHandler = new EventHandler(form, "submit", onSubmitEventCallback)
 
-  email_observer.watch();
-  pw_observer.watch();
-  submit_observer.watch();
+  email_eventHandler.watch();
+  pw_eventHandler.watch();
+  submit_eventHandler.watch();
 
   console.log("onload!");
 });
